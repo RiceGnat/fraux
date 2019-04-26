@@ -1,0 +1,23 @@
+{
+  "name": "fraux",
+  "version": "0.0.1",
+  "description": "Granblue Fantasy info bot for Discord",
+  "main": "fraux.js",
+  "author": "RiceGnat",
+  "repository": "github:RiceGnat/fraux",
+  "scripts": {
+    "start": "node fraux.js"
+  },
+  "engines": {
+    "node": ">=7.0"
+  },
+  "dependencies": {
+    "dotenv": "^6.0.0",
+    "mysql": "^2.14.1",
+    "request": "^2.88.0",
+    "wumpus": "github:RiceGnat/wumpus"
+  },
+  "config": {
+    "owner": "108470819088248832"
+  }
+}
