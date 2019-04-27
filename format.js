@@ -117,10 +117,28 @@ function character(char) {
     }
     footer.push(`Wiki updated ${df(char.updated, "UTC:mmm d, yyyy")}`);
 
+    let color = null;
+
+    switch (char.element.toLowerCase()) {
+        case "fire":
+            color = 11025964; break;
+        case "water":
+            color = 3037091; break;
+        case "earth":
+            color = 8802601; break;
+        case "wind":
+            color = 2455617; break;
+        case "light":
+            color = 13485160; break;
+        case "dark":
+            color = 7227278; break;
+    }
+
     return {
         author: author,
         title: `**${char.name}**`,
         url: char.url,
+        color: color,
         thumbnail: { url: char.thumbnail },
         fields: fields,
         footer: {
