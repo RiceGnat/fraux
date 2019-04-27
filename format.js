@@ -34,6 +34,27 @@ function truncateFieldValue(str) {
     else return str;
 }
 
+function getElementColor(element) {
+    switch (element) {
+        case "fire":
+            return 11025964;
+        case "water":
+            return 3037091;
+        case "earth":
+            return 8802601;
+        case "wind":
+            return 2455617;
+        case "light":
+            return 13485160;
+        case "dark":
+            return 7227278;
+    }
+}
+
+function uncapStars(base, max) {
+    return base && max ? `\u2003${"\u2606".repeat(base)}${"\u2605".repeat(Math.max(0, max - base))}` : "";
+}
+
 function eventList(events) {
     const now = jst.now();
     const nows = Math.floor(now / 1000);
@@ -80,11 +101,11 @@ function character(char) {
     const fields = [
         {
             name: "Rarity / Element / Race / Style",
-            value: `${char.rarity} / ${char.element} / ${char.race} / ${char.type}`,
+            value: `${char.rarity.toUpperCase()} / ${firstLetterUpper(char.element)} / ${firstLetterUpper(char.race)} / ${firstLetterUpper(char.type)}`,
         },
         {
             name: "Weapon",
-            value: `${char.weapons.join(" / ")}`,
+            value: `${char.weapons.map(w => firstLetterUpper(w)).join(" / ")}`,
             inline: true
         },
         {
@@ -110,44 +131,48 @@ function character(char) {
         value: truncateFieldValue(char.supports.map(support => `**${support.name}**\n${support.description}`).join("\n"))
     })
 
-    const footer = [];
-    footer.push(`Released ${df(char.released, "UTC:mmm d, yyyy")}`);
-    if (char.uncapped) {
-        footer.push(`Fully uncapped ${df(char.uncapped, "UTC:mmm d, yyyy")}`);
-    }
-    footer.push(`Wiki updated ${df(char.updated, "UTC:mmm d, yyyy")}`);
-
-    let color = null;
-
-    switch (char.element.toLowerCase()) {
-        case "fire":
-            color = 11025964; break;
-        case "water":
-            color = 3037091; break;
-        case "earth":
-            color = 8802601; break;
-        case "wind":
-            color = 2455617; break;
-        case "light":
-            color = 13485160; break;
-        case "dark":
-            color = 7227278; break;
-    }
-
     return {
         author: author,
-        title: `**${char.name}**`,
+        title: `**${char.name}**${uncapStars(char.base, char.uncap)}`,
         url: char.url,
-        color: color,
+        color: getElementColor(char.element.toLowerCase()),
         thumbnail: { url: char.thumbnail },
         fields: fields,
         footer: {
-            text: footer.join("\u2003")
+            text: `Last wiki revision on ${df(char.updated, "UTC:mmm d, yyyy")}`
+        }
+    };
+}
+
+function summon(summon) {
+    const fields = [
+        {
+            name: "Rarity / Element",
+            value: `${summon.rarity.toUpperCase()} / ${firstLetterUpper(summon.element)}`,
+            inline: true
+        },
+        {
+            name: "HP / ATK",
+            value: `${summon.hp} / ${summon.atk}`,
+            inline: true
+        }
+    ]
+
+    return {
+        author: author,
+        title: `**${summon.name}**${uncapStars(summon.base, summon.uncap)}`,
+        url: summon.url,
+        color: getElementColor(summon.element.toLowerCase()),
+        thumbnail: { url: summon.thumbnail },
+        fields: fields,
+        footer: {
+            text: `Last wiki revision on ${df(summon.updated, "UTC:mmm d, yyyy")}`
         }
     };
 }
 
 module.exports = {
     buildEventList: eventList,
-    characterEmbed: character
+    characterEmbed: character,
+    summonEmbed: summon
 }

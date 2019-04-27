@@ -4,7 +4,7 @@ const format = require("./format");
 function setup(cmd) {
     cmd.add("wiki",
         "<action>",
-        "Get info from gbf.wiki",
+        `Get info from [gbf.wiki](https://gbf.wiki/)`,
         "Wiki");
 
     cmd.addsub("events",
@@ -26,6 +26,22 @@ function setup(cmd) {
         (context, ...args) => 
             wiki.getCharacter(args.join(" "))
             .then(results => format.characterEmbed(results))
+            .then(embed => ({
+                to: context.sender.channelId,
+                embed: embed
+            }), error => ({
+                to: context.sender.channelId,
+                message: error
+            }))
+        );
+
+    cmd.addsub("summon",
+        "<name>",
+        "Get summon info",
+        "wiki",
+        (context, ...args) => 
+            wiki.getSummon(args.join(" "))
+            .then(results => format.summonEmbed(results))
             .then(embed => ({
                 to: context.sender.channelId,
                 embed: embed

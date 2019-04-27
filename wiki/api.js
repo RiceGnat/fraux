@@ -32,7 +32,6 @@ function search(pagename) {
         action: "opensearch",
         search: pagename,
         redirects: "resolve",
-        limit: 1,
         format: "json"
     }
 
@@ -46,7 +45,11 @@ function search(pagename) {
             
             if (body[1].length == 0) reject();
 
-            // return first result
+            // Sort results to get default page at the top
+            body[1].sort();
+            body[3].sort();
+
+            // Return first result
             resolve({
                 title: body[1][0],
                 url: body[3][0]
@@ -127,13 +130,28 @@ function expandTemplate(text, pagename) {
 }
 
 function isCharacterPage(text) {
-    if (text.match(/{{Character\W/) !== null) return true;
+    if (text.match(/{{Character\W/i) !== null) return true;
     else return false;
+}
+
+function isSummonPage(text) {
+    if (text.match(/{{Summon\W/i) !== null) return true;
+    else return false;
+}
+
+function findSummonRef(text) {
+    let matches = text.match(/{{About\s*\|[ \w]*\|.*\s*the summon[^\|]*\|([^\|}]+)/i);
+    if (matches) return matches[1];
+    else return null;
+}
+
+function safeMatch(text, regex) {
+    let matches = text.match(regex);
+    return matches ? matches[1] : null;
 }
 
 function parseCharacter(text, pagename, url) {
     const char = {};
-    let matches;
 
     try {
         // Matching depends on the wikitext parameters being separated by newlines!
@@ -143,89 +161,85 @@ function parseCharacter(text, pagename, url) {
         char.url = url;
 
         // GBF asset ID
-        char.id = text.match(/\|id *= *(\d+)/)[1];
+        char.id = safeMatch(text, /\|id *= *(\d+)/);
 
         // Square inventory tile (works better with Discord embed)
         char.thumbnail = `${host}/Special:Redirect/file/Npc_s_${char.id}_01.jpg`;
 
+        // Uncap level
+        char.base = safeMatch(text, /\|base_evo *= *(\d+)/);
+        char.uncap = safeMatch(text, /\|max_evo *= *(\d+)/);
+
         // Release dates
-        char.released = new Date(text.match(/\|release_date *= *(.+)/)[1]);
-        matches = text.match(/\|5star_date *= *(.+)/);
-        if (matches) {
-            char.uncapped = new Date(matches[1]);
-        }
-
-        // Max ATK and HP values
-        matches = text.match(/\|flb_atk *= *(\d+)/);
-        char.atk = matches ? matches[1] : text.match(/\|max_atk *= *(\d+)/)[1];
-
-        matches = text.match(/\|flb_hp *= *(\d+)/);
-        char.hp = matches ? matches[1] : text.match(/\|max_hp *= *(\d+)/)[1];
+        let date = safeMatch(text, /\|release_date *= *(.+)/);
+        char.released = date ? new Date(date) : null;
+        date = safeMatch(text, /\|5star_date *= *(.+)/);
+        char.uncapped = date ? new Date(date) : null;
         
         // Rarity
-        char.rarity = text.match(/\|rarity *= *(.+)/)[1];
+        char.rarity = safeMatch(text, /\|rarity *= *(.+)/);
 
         // Element
-        char.element = text.match(/\|element *= *(.+)/)[1];
+        char.element = safeMatch(text, /\|element *= *(.+)/);
 
         // Race
-        char.race = text.match(/\|race *= *(.+)/)[1];
+        char.race = safeMatch(text, /\|race *= *(.+)/);
 
         // Character style (ATK, DEF, BAL, SPEC, HEAL)
-        char.type = text.match(/\|type *= *(.+)/)[1];
+        char.type = safeMatch(text, /\|type *= *(.+)/);
 
         // Weapon proficiency
-        char.weapons = text.match(/\|weapon *= *(.+)/)[1].split(",");
+        char.weapons = safeMatch(text, /\|weapon *= *(.+)/).split(",");
+
+        // Max ATK and HP values
+        char.atk = safeMatch(text, /\|flb_atk *= *(\d+)/) || safeMatch(text, /\|max_atk *= *(\d+)/);
+        char.hp = safeMatch(text, /\|flb_hp *= *(\d+)/) || safeMatch(text, /\|max_hp *= *(\d+)/);
 
         // Ougis
-        let count = text.match(/\|ougi_count *= *(\d+)/)[1];
+        let count = safeMatch(text, /\|ougi_count *= *(\d+)/);
         char.ougis = [];
         for (let i = 0; i < count; i++) {
             // Don't use "1" for the first entry
             let n = i == 0 ? "" : i + 1;
 
             char.ougis[i] = {
-                name: text.match(`\\|ougi${n}_name\ *=\ *(.+)`)[1],
-                description: text.match(`\\|ougi${n}_desc\ *=\ *(.+)`)[1],
-            }
-
-            matches = text.match(`\\|ougi${n}_label\ *=\ *(.+)`);
-            if (matches) {
-                char.ougis[i].label = matches[1];
+                name: safeMatch(text, `\\|ougi${n}_name\ *=\ *(.+)`),
+                description: safeMatch(text, `\\|ougi${n}_desc\ *=\ *(.+)`),
+                label: safeMatch(text, `\\|ougi${n}_label\ *=\ *(.+)`)
             }
         }
 
         // Skills
-        count = text.match(/\|abilitycount *= *(\d+)/)[1];
+        count = safeMatch(text, /\|abilitycount *= *(\d+)/);
         char.skills = [];
         for (let i = 0; i < count; i++) {
             let n = i + 1;
 
             char.skills[i] = {
-                name: text.match(`\\|a${n}_name\ *=\ *(.+)`)[1],
-                description: text.match(`\\|a${n}_effdesc\ *=\ *(.+)`)[1]
+                name: safeMatch(text, `\\|a${n}_name\ *=\ *(.+)`),
+                description: safeMatch(text, `\\|a${n}_effdesc\ *=\ *(.+)`)
             }
         }
 
         // Support skills
-        count = text.match(/\|s_abilitycount *= *(\d+)/)[1];
+        count = safeMatch(text, /\|s_abilitycount *= *(\d+)/);
         char.supports = [];
         for (let i = 0; i < count; i++) {
             // Don't use "1" for the first entry
             let n = i == 0 ? "" : i + 1;
 
             char.supports[i] = {
-                name: text.match(`\\|sa${n}_name\ *=\ *(.+)`)[1],
-                description: text.match(`\\|sa${n}_desc\ *=\ *(.+)`)[1]
+                name: safeMatch(text, `\\|sa${n}_name\ *=\ *(.+)`),
+                description: safeMatch(text, `\\|sa${n}_desc\ *=\ *(.+)`)
             }
         }
 
         // EMP support skill
-        matches = text.match(/\|sa_emp_desc *= *(.+)/);
-        if (matches) {
+        let emp = safeMatch(text, /\|sa_emp_desc *= *(.+)/);
+        if (emp) {
             char.supports.push({
                 name: "Extended Mastery Support Skill",
-                description: matches[1]
+                description: emp
             });
         }
     }
@@ -285,8 +299,84 @@ function getCharacter(pagename) {
         });
 }
 
+function parseSummon(text, pagename, url) {
+    const summon = {};
+    let matches;
+
+    try {
+        // Page title and url are returned from search
+        summon.name = pagename;
+        summon.url = url;
+
+        // GBF asset ID
+        summon.id = safeMatch(text, /\|id *= *(\d+)/);
+
+        // Square inventory tile (works better with Discord embed)
+        summon.thumbnail = `${host}/Special:Redirect/file/Summon_s_${summon.id}.jpg`;
+        
+        // Uncap level
+        summon.base = safeMatch(text, /\|base_evo *= *(\d+)/);
+        summon.uncap = safeMatch(text, /\|max_evo *= *(\d+)/);
+
+        // Release dates
+        let date = safeMatch(text, /\|release_date *= *(.+)/);
+        summon.released = date ? new Date(date) : null;
+        date = safeMatch(text, /\|4star_date *= *(.+)/);
+        summon.uncapped = date ? new Date(date) : null;
+        date = safeMatch(text, /\|5star_date *= *(.+)/);
+        summon.uncapped2 = date ? new Date(date) : null;
+        
+        // Rarity
+        summon.rarity = safeMatch(text, /\|rarity *= *(.+)/);
+
+        // Element
+        summon.element = safeMatch(text, /\|element *= *(.+)/);
+
+        // Max ATK and HP values
+        summon.atk = safeMatch(text, /\|atk3 *= *(\d+)/) ||
+                     safeMatch(text, /\|atk2 *= *(\d+)/) ||
+                     safeMatch(text, /\|atk1 *= *(\d+)/);
+        summon.hp =  safeMatch(text, /\|hp3 *= *(\d+)/) ||
+                     safeMatch(text, /\|hp2 *= *(\d+)/) ||
+                     safeMatch(text, /\|hp1 *= *(\d+)/);
+    }
+    catch (ex) {
+        // Catch exceptions so we can handle them as part of the promise flow
+        return Promise.reject(ex);
+    }
+
+    return Promise.all([
+        getLatestRevisionTime(pagename)
+            .then(timestamp => summon.updated = new Date(timestamp))
+    ]).then(() => summon);
+}
+
+function getSummon(pagename) {
+    return search(pagename)
+        .then(result => getRawPage(result.title)
+            .then(text => {
+                if (!isSummonPage(text)) {
+                    let summonPage = findSummonRef(text);
+                    if (summonPage) {
+                        return getSummon(summonPage);
+                    }
+                    else throw `Not a summon page: ${result.url}`;
+                }
+                
+                return parseSummon(text, result.title, result.url)
+                    .catch(error => {
+                        console.log(error);
+                        throw `Something went wrong while parsing the page: ${result.url}`;
+                    });
+            })
+        , error => {
+            throw "Couldn't find that summon";
+        });
+}
+
 module.exports = {
     getCurrentEvents: getCurrentEvents,
     getCharacter: getCharacter,
+    getSummon: getSummon,
     host: host
 }
