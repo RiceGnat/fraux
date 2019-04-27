@@ -18,6 +18,22 @@ function setup(cmd) {
                 embed: embed
             }))
         );
+
+    cmd.addsub("char",
+        "<name>",
+        "Get character info",
+        "wiki",
+        (context, ...args) => 
+            wiki.getCharacter(args.join(" "))
+            .then(results => format.characterEmbed(results))
+            .then(embed => ({
+                to: context.sender.channelId,
+                embed: embed
+            }), error => ({
+                to: context.sender.channelId,
+                message: error
+            }))
+        );
 }
 
 module.exports = {

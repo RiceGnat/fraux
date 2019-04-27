@@ -5,7 +5,7 @@ const host = "https://gbf.wiki";
 
 function getCurrentEvents() {
     const now = Math.floor(jst.now() / 1000);
-    qs = {
+    const qs = {
         title: "Special:CargoExport",
         tables: "event_history",
         fields: "name,jst_start,jst_end,unf_element,wiki_page",
@@ -27,7 +27,237 @@ function getCurrentEvents() {
     });
 }
 
+function search(pagename) {
+    const qs = {
+        action: "opensearch",
+        search: pagename,
+        redirects: "resolve",
+        limit: 1,
+        format: "json"
+    }
+
+    return new Promise((resolve, reject) => {
+        request.get({
+            url: `${host}/api.php`,
+            qs: qs,
+            json: true
+        }, (err, resp, body) => {
+            if (err || resp.statusCode !== 200) return reject(err ? err : resp.statusCode);
+            
+            if (body[1].length == 0) reject();
+
+            // return first result
+            resolve({
+                title: body[1][0],
+                url: body[3][0]
+            });
+        })
+    });
+}
+
+function getRawPage(pagename) {
+    return new Promise((resolve, reject) => {
+        request.get({
+            url: `${host}/${encodeURIComponent(pagename)}?action=raw`
+        }, (err, resp, body) => {
+            if (err || resp.statusCode !== 200) return reject(err ? err : resp.statusCode);
+            resolve(body);
+        })
+    });
+}
+
+function expandTemplate(text, pagename) {
+    const qs = {
+        action: "expandtemplates",
+        title: pagename,
+        text: text,
+        prop: "wikitext",
+        templatesandboxprefix: "User:RiceGnat/Discord",
+        format: "json"
+    }
+    return new Promise((resolve, reject) => {
+        request.get({
+            url: `${host}/api.php`,
+            qs: qs,
+            json: true
+        }, (err, resp, body) => {
+            if (err || resp.statusCode !== 200) return reject(err ? err : resp.statusCode);
+
+            let str = body.expandtemplates.wikitext;
+
+            // Replace <br/> tags with \n
+            str = str.replace(/<\s*br\s*\/\s*>/g, "\n");
+
+            // Replace inter wiki links
+            str = str.replace(/\[\[(?:[^\]\|]+\|)?([^\]\|]+)\]\]/g, "$1");
+
+            // Replace wiki bolding or italics with markdown italics
+            str = str.replace(/'''?/g, "_");
+
+            // Remove <ref> tags
+            str = str.replace(/<\s*ref[^<>]*\/\s*>/g, "");
+            str = str.replace(/<\s*ref[^<>]*>[^<>]*<\/ref>/g, "");
+
+            resolve(str);
+        })
+    });
+}
+
+function isCharacterPage(text) {
+    if (text.match(/{{Character\W/) !== null) return true;
+    else return false;
+}
+
+function parseCharacter(text, pagename, url) {
+    const char = {};
+    let matches;
+
+    try {
+        // Matching depends on the wikitext parameters being separated by newlines!
+
+        // Page title and url are returned from search
+        char.name = pagename;
+        char.url = url;
+
+        // GBF asset ID
+        char.id = text.match(/\|id\s*=\s*(\d+)/)[1];
+
+        // Square inventory tile (works better with Discord embed)
+        char.thumbnail = `${host}/Special:Redirect/file/Npc_s_${char.id}_01.jpg`;
+
+        // Full art (base version)
+        char.image = `${host}/Special:Redirect/file/Npc_zoom_${char.id}_01.png`;
+
+        // Max ATK and HP values
+        matches = text.match(/\|flb_atk\s*=\s*(\d+)/);
+        char.atk = matches ? matches[1] : text.match(/\|max_atk\s*=\s*(\d+)/)[1];
+
+        matches = text.match(/\|flb_hp\s*=\s*(\d+)/);
+        char.hp = matches ? matches[1] : text.match(/\|max_hp\s*=\s*(\d+)/)[1];
+        
+        // Rarity
+        char.rarity = text.match(/\|rarity\s*=\s*(.+)/)[1];
+
+        // Element
+        char.element = text.match(/\|element\s*=\s*(.+)/)[1];
+
+        // Race
+        char.race = text.match(/\|race\s*=\s*(.+)/)[1];
+
+        // Character style (ATK, DEF, BAL, SPEC, HEAL)
+        char.type = text.match(/\|type\s*=\s*(.+)/)[1];
+
+        // Weapon proficiency
+        char.weapons = text.match(/\|weapon\s*=\s*(.+)/)[1].split(",");
+
+        // Ougis
+        let count = text.match(/\|ougi_count\s*=\s*(\d+)/)[1];
+        char.ougis = [];
+        for (let i = 0; i < count; i++) {
+            // Don't use "1" for the first entry
+            let n = i == 0 ? "" : i + 1;
+
+            char.ougis[i] = {
+                name: text.match(`\\|ougi${n}_name\\s*=\\s*(.+)`)[1],
+                description: text.match(`\\|ougi${n}_desc\\s*=\\s*(.+)`)[1],
+            }
+
+            matches = text.match(`\\|ougi${n}_label\\s*=\\s*(.+)`);
+            if (matches) {
+                char.ougis[i].label = matches[1];
+            }
+        }
+
+        // Skills
+        count = text.match(/\|abilitycount\s*=\s*(\d+)/)[1];
+        char.skills = [];
+        for (let i = 0; i < count; i++) {
+            let n = i + 1;
+
+            char.skills[i] = {
+                name: text.match(`\\|a${n}_name\\s*=\\s*(.+)`)[1],
+                description: text.match(`\\|a${n}_effdesc\\s*=\\s*(.+)`)[1]
+            }
+        }
+
+        // Support skills
+        count = text.match(/\|s_abilitycount\s*=\s*(\d+)/)[1];
+        char.supports = [];
+        for (let i = 0; i < count; i++) {
+            // Don't use "1" for the first entry
+            let n = i == 0 ? "" : i + 1;
+
+            char.supports[i] = {
+                name: text.match(`\\|sa${n}_name\\s*=\\s*(.+)`)[1],
+                description: text.match(`\\|sa${n}_desc\\s*=\\s*(.+)`)[1]
+            }
+        }
+
+        // EMP support skill
+        matches = text.match(`\\|sa_emp_desc\\s*=\\s*(.+)`);
+        if (matches) {
+            char.supports.push({
+                name: "Extended Mastery Support Skill",
+                description: matches[1]
+            });
+        }
+    }
+    catch (ex) {
+        // Catch exceptions so we can handle them as part of the promise flow
+        return Promise.reject(ex);
+    }
+
+    // Expand wiki text
+    return Promise.all([
+        Promise.all(char.ougis.map(ougi => expandTemplate(ougi.description, pagename)))
+            .then(descs => {
+                descs.forEach((desc, i) => {
+                    char.ougis[i].description = desc;
+                });
+            }),
+        Promise.all(char.ougis.map(ougi => ougi.label ? expandTemplate(ougi.label, pagename) : null))
+            .then(labels => {
+                labels.forEach((label, i) => {
+                    // Don't want newlines in ougi labels
+                    if (label) char.ougis[i].label = label.replace("\n", " ");
+                });
+            }),
+        Promise.all(char.skills.map(skill => expandTemplate(skill.description, pagename)))
+            .then(descs => {
+                descs.forEach((desc, i) => {
+                    char.skills[i].description = desc;
+                });
+            }),
+        Promise.all(char.supports.map(support => expandTemplate(support.description, pagename)))
+            .then(descs => {
+                descs.forEach((desc, i) => {
+                    char.supports[i].description = desc;
+                });
+            })
+    ]).then(() => char);
+}
+
+function getCharacter(pagename) {
+    return search(pagename)
+        .then(result => getRawPage(result.title)
+            .then(text => {
+                if (!isCharacterPage(text)) {
+                    throw `Not a character page: ${result.url}`;
+                }
+
+                return parseCharacter(text, result.title, result.url)
+                    .catch(error => {
+                        console.log(error);
+                        throw `Something went wrong while parsing the page: ${result.url}`;
+                    });
+            })
+        , error => {
+            throw "Couldn't find that character";
+        });
+}
+
 module.exports = {
     getCurrentEvents: getCurrentEvents,
+    getCharacter: getCharacter,
     host: host
 }
