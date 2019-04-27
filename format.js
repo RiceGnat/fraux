@@ -110,6 +110,13 @@ function character(char) {
         value: truncateFieldValue(char.supports.map(support => `**${support.name}**\n${support.description}`).join("\n"))
     })
 
+    const footer = [];
+    footer.push(`Released ${df(char.released, "UTC:mmm d, yyyy")}`);
+    if (char.uncapped) {
+        footer.push(`Fully uncapped ${df(char.uncapped, "UTC:mmm d, yyyy")}`);
+    }
+    footer.push(`Wiki updated ${df(char.updated, "UTC:mmm d, yyyy")}`);
+
     return {
         author: author,
         title: `**${char.name}**`,
@@ -117,7 +124,7 @@ function character(char) {
         thumbnail: { url: char.thumbnail },
         fields: fields,
         footer: {
-            text: `Released ${df(char.released, "UTC:mmm d, yyyy")}\u2003Fully uncapped ${df(char.uncapped, "UTC:mmm d, yyyy")}\u2003Wiki updated ${df(char.updated, "UTC:mmm d, yyyy")}`
+            text: footer.join("\u2003")
         }
     };
 }

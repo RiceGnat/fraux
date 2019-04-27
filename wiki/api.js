@@ -109,7 +109,7 @@ function expandTemplate(text, pagename) {
             let str = body.expandtemplates.wikitext;
 
             // Replace <br/> tags with \n
-            str = str.replace(/<\s*br\s*\/\s*>/g, "\n");
+            str = str.replace(/< *br *\/ *>/g, "\n");
 
             // Replace inter wiki links
             str = str.replace(/\[\[(?:[^\]\|]+\|)?([^\]\|]+)\]\]/g, "$1");
@@ -118,8 +118,8 @@ function expandTemplate(text, pagename) {
             str = str.replace(/'''?/g, "_");
 
             // Remove <ref> tags
-            str = str.replace(/<\s*ref[^<>]*\/\s*>/g, "");
-            str = str.replace(/<\s*ref[^<>]*>[^<>]*<\/ref>/g, "");
+            str = str.replace(/< *ref[^<>]*\/ *>/g, "");
+            str = str.replace(/< *ref[^<>]*>[^<>]*<\/ref>/g, "");
 
             resolve(str);
         })
@@ -143,82 +143,85 @@ function parseCharacter(text, pagename, url) {
         char.url = url;
 
         // GBF asset ID
-        char.id = text.match(/\|id\s*=\s*(\d+)/)[1];
+        char.id = text.match(/\|id *= *(\d+)/)[1];
 
         // Square inventory tile (works better with Discord embed)
         char.thumbnail = `${host}/Special:Redirect/file/Npc_s_${char.id}_01.jpg`;
 
         // Release dates
-        char.released = new Date(text.match(/\|release_date\s*=\s*(.+)/)[1]);
-        char.uncapped = new Date(text.match(/\|5star_date\s*=\s*(.+)/)[1]);
+        char.released = new Date(text.match(/\|release_date *= *(.+)/)[1]);
+        matches = text.match(/\|5star_date *= *(.+)/);
+        if (matches) {
+            char.uncapped = new Date(matches[1]);
+        }
 
         // Max ATK and HP values
-        matches = text.match(/\|flb_atk\s*=\s*(\d+)/);
-        char.atk = matches ? matches[1] : text.match(/\|max_atk\s*=\s*(\d+)/)[1];
+        matches = text.match(/\|flb_atk *= *(\d+)/);
+        char.atk = matches ? matches[1] : text.match(/\|max_atk *= *(\d+)/)[1];
 
-        matches = text.match(/\|flb_hp\s*=\s*(\d+)/);
-        char.hp = matches ? matches[1] : text.match(/\|max_hp\s*=\s*(\d+)/)[1];
+        matches = text.match(/\|flb_hp *= *(\d+)/);
+        char.hp = matches ? matches[1] : text.match(/\|max_hp *= *(\d+)/)[1];
         
         // Rarity
-        char.rarity = text.match(/\|rarity\s*=\s*(.+)/)[1];
+        char.rarity = text.match(/\|rarity *= *(.+)/)[1];
 
         // Element
-        char.element = text.match(/\|element\s*=\s*(.+)/)[1];
+        char.element = text.match(/\|element *= *(.+)/)[1];
 
         // Race
-        char.race = text.match(/\|race\s*=\s*(.+)/)[1];
+        char.race = text.match(/\|race *= *(.+)/)[1];
 
         // Character style (ATK, DEF, BAL, SPEC, HEAL)
-        char.type = text.match(/\|type\s*=\s*(.+)/)[1];
+        char.type = text.match(/\|type *= *(.+)/)[1];
 
         // Weapon proficiency
-        char.weapons = text.match(/\|weapon\s*=\s*(.+)/)[1].split(",");
+        char.weapons = text.match(/\|weapon *= *(.+)/)[1].split(",");
 
         // Ougis
-        let count = text.match(/\|ougi_count\s*=\s*(\d+)/)[1];
+        let count = text.match(/\|ougi_count *= *(\d+)/)[1];
         char.ougis = [];
         for (let i = 0; i < count; i++) {
             // Don't use "1" for the first entry
             let n = i == 0 ? "" : i + 1;
 
             char.ougis[i] = {
-                name: text.match(`\\|ougi${n}_name\\s*=\\s*(.+)`)[1],
-                description: text.match(`\\|ougi${n}_desc\\s*=\\s*(.+)`)[1],
+                name: text.match(`\\|ougi${n}_name\ *=\ *(.+)`)[1],
+                description: text.match(`\\|ougi${n}_desc\ *=\ *(.+)`)[1],
             }
 
-            matches = text.match(`\\|ougi${n}_label\\s*=\\s*(.+)`);
+            matches = text.match(`\\|ougi${n}_label\ *=\ *(.+)`);
             if (matches) {
                 char.ougis[i].label = matches[1];
             }
         }
 
         // Skills
-        count = text.match(/\|abilitycount\s*=\s*(\d+)/)[1];
+        count = text.match(/\|abilitycount *= *(\d+)/)[1];
         char.skills = [];
         for (let i = 0; i < count; i++) {
             let n = i + 1;
 
             char.skills[i] = {
-                name: text.match(`\\|a${n}_name\\s*=\\s*(.+)`)[1],
-                description: text.match(`\\|a${n}_effdesc\\s*=\\s*(.+)`)[1]
+                name: text.match(`\\|a${n}_name\ *=\ *(.+)`)[1],
+                description: text.match(`\\|a${n}_effdesc\ *=\ *(.+)`)[1]
             }
         }
 
         // Support skills
-        count = text.match(/\|s_abilitycount\s*=\s*(\d+)/)[1];
+        count = text.match(/\|s_abilitycount *= *(\d+)/)[1];
         char.supports = [];
         for (let i = 0; i < count; i++) {
             // Don't use "1" for the first entry
             let n = i == 0 ? "" : i + 1;
 
             char.supports[i] = {
-                name: text.match(`\\|sa${n}_name\\s*=\\s*(.+)`)[1],
-                description: text.match(`\\|sa${n}_desc\\s*=\\s*(.+)`)[1]
+                name: text.match(`\\|sa${n}_name\ *=\ *(.+)`)[1],
+                description: text.match(`\\|sa${n}_desc\ *=\ *(.+)`)[1]
             }
         }
 
         // EMP support skill
-        matches = text.match(`\\|sa_emp_desc\\s*=\\s*(.+)`);
+        matches = text.match(/\|sa_emp_desc *= *(.+)/);
         if (matches) {
             char.supports.push({
                 name: "Extended Mastery Support Skill",
