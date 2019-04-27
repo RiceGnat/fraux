@@ -55,6 +55,29 @@ function search(pagename) {
     });
 }
 
+function getLatestRevisionTime(pagename) {
+    const qs = {
+        action: "query",
+        prop: "revisions",
+        titles: pagename,
+        format: "json"
+    }
+
+    return new Promise((resolve, reject) => {
+        request.get({
+            url: `${host}/api.php`,
+            qs: qs,
+            json: true
+        }, (err, resp, body) => {
+            if (err || resp.statusCode !== 200) return reject(err ? err : resp.statusCode);
+            
+            let results = body["query"]["pages"];
+
+            resolve(results[Object.keys(results)[0]]["revisions"][0]["timestamp"]);
+        })
+    });
+}
+
 function getRawPage(pagename) {
     return new Promise((resolve, reject) => {
         request.get({
@@ -125,8 +148,9 @@ function parseCharacter(text, pagename, url) {
         // Square inventory tile (works better with Discord embed)
         char.thumbnail = `${host}/Special:Redirect/file/Npc_s_${char.id}_01.jpg`;
 
-        // Full art (base version)
-        char.image = `${host}/Special:Redirect/file/Npc_zoom_${char.id}_01.png`;
+        // Release dates
+        char.released = new Date(text.match(/\|release_date\s*=\s*(.+)/)[1]);
+        char.uncapped = new Date(text.match(/\|5star_date\s*=\s*(.+)/)[1]);
 
         // Max ATK and HP values
         matches = text.match(/\|flb_atk\s*=\s*(\d+)/);
@@ -233,7 +257,9 @@ function parseCharacter(text, pagename, url) {
                 descs.forEach((desc, i) => {
                     char.supports[i].description = desc;
                 });
-            })
+            }),
+        getLatestRevisionTime(pagename)
+            .then(timestamp => char.updated = new Date(timestamp))
     ]).then(() => char);
 }
 

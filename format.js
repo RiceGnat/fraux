@@ -115,7 +115,10 @@ function character(char) {
         title: `**${char.name}**`,
         url: char.url,
         thumbnail: { url: char.thumbnail },
-        fields: fields
+        fields: fields,
+        footer: {
+            text: `Released ${df(char.released, "UTC:mmm d, yyyy")}\u2003Fully uncapped ${df(char.uncapped, "UTC:mmm d, yyyy")}\u2003Wiki updated ${df(char.updated, "UTC:mmm d, yyyy")}`
+        }
     };
 }
 
