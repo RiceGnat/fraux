@@ -34,6 +34,12 @@ function setup(cmd) {
                 message: error
             }))
         );
+
+    cmd.help({
+        title: `Fraux v${require("./package.json").version}`,
+        description: "Granblue Fantasy utility bot. For more information, see [GitHub](https://github.com/RiceGnat/fraux/).\nIcon by [@creepy_himecchi](https://twitter.com/creepy_himecchi/status/1105333289747771393).",
+        footer: { text: `Developed by RiceGnat#9420` }
+    });
 }
 
 module.exports = {
