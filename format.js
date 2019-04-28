@@ -55,6 +55,15 @@ function uncapStars(base, max) {
     return base && max ? `\u2003${"\u2606".repeat(base)}${"\u2605".repeat(Math.max(0, max - base))}` : "";
 }
 
+function summonUncapFromIndex(index) {
+    switch (index) {
+        case 0: return "0\u2605";
+        case 1: return "3\u2605";
+        case 2: return "4\u2605";
+        case 3: return "5\u2605";
+    }
+}
+
 function eventList(events) {
     const now = jst.now();
     const nows = Math.floor(now / 1000);
@@ -133,7 +142,7 @@ function character(char) {
 
     return {
         author: author,
-        title: `**${char.name}**${uncapStars(char.base, char.uncap)}`,
+        title: `**${char.pagename}**${uncapStars(char.base, char.uncap)}`,
         url: char.url,
         color: getElementColor(char.element.toLowerCase()),
         thumbnail: { url: char.thumbnail },
@@ -157,6 +166,44 @@ function summon(summon) {
             inline: true
         }
     ]
+
+    let auras = [];
+    let subs = [];
+    let calls = [];
+    for (let i = 0; i < 4; i++) {
+        if (summon.auras.main[i]) {
+            auras.push(`**${summonUncapFromIndex(i)}:** ${summon.auras.main[i]}`);
+        }
+
+        if (summon.auras.sub[i]) {
+            subs.push(`**${summonUncapFromIndex(i)}:** ${summon.auras.sub[i]}`);
+        }
+
+        if (summon.call.effects[i]) {
+            calls.push(`**${summonUncapFromIndex(i)}:** ${summon.call.effects[i]}`);
+        }
+    }
+
+    if (auras.length > 0) {
+        fields.push({
+            name: `${summon.name}'s Aura`,
+            value: truncateFieldValue(auras.join("\n"))
+        });
+    }
+
+    if (subs.length > 0) {
+        fields.push({
+            name: `Sub Aura`,
+            value: truncateFieldValue(subs.join("\n"))
+        });
+    }
+
+    if (calls.length > 0) {
+        fields.push({
+            name: `Call – ${summon.call.name}`,
+            value: truncateFieldValue(calls.join("\n"))
+        });
+    }
 
     return {
         author: author,

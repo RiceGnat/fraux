@@ -157,8 +157,11 @@ function parseCharacter(text, pagename, url) {
         // Matching depends on the wikitext parameters being separated by newlines!
 
         // Page title and url are returned from search
-        char.name = pagename;
+        char.pagename = pagename;
         char.url = url;
+
+        // Name (separate from page name)
+        char.name = safeMatch(text, /\|name *= *(.+)/);
 
         // GBF asset ID
         char.id = safeMatch(text, /\|id *= *(\d+)/);
@@ -203,9 +206,9 @@ function parseCharacter(text, pagename, url) {
             let n = i == 0 ? "" : i + 1;
 
             char.ougis[i] = {
-                name: safeMatch(text, `\\|ougi${n}_name\ *=\ *(.+)`),
-                description: safeMatch(text, `\\|ougi${n}_desc\ *=\ *(.+)`),
-                label: safeMatch(text, `\\|ougi${n}_label\ *=\ *(.+)`)
+                name: safeMatch(text, `\\|ougi${n}_name *= *(.+)`),
+                description: safeMatch(text, `\\|ougi${n}_desc *= *(.+)`),
+                label: safeMatch(text, `\\|ougi${n}_label *= *(.+)`)
             }
         }
 
@@ -216,8 +219,8 @@ function parseCharacter(text, pagename, url) {
             let n = i + 1;
 
             char.skills[i] = {
-                name: safeMatch(text, `\\|a${n}_name\ *=\ *(.+)`),
-                description: safeMatch(text, `\\|a${n}_effdesc\ *=\ *(.+)`)
+                name: safeMatch(text, `\\|a${n}_name *= *(.+)`),
+                description: safeMatch(text, `\\|a${n}_effdesc *= *(.+)`)
             }
         }
 
@@ -229,8 +232,8 @@ function parseCharacter(text, pagename, url) {
             let n = i == 0 ? "" : i + 1;
 
             char.supports[i] = {
-                name: safeMatch(text, `\\|sa${n}_name\ *=\ *(.+)`),
-                description: safeMatch(text, `\\|sa${n}_desc\ *=\ *(.+)`)
+                name: safeMatch(text, `\\|sa${n}_name *= *(.+)`),
+                description: safeMatch(text, `\\|sa${n}_desc *= *(.+)`)
             }
         }
 
@@ -275,6 +278,8 @@ function parseCharacter(text, pagename, url) {
                     char.supports[i].description = desc;
                 });
             }),
+        expandTemplate(char.name, pagename) // Sometimes the name field uses {{PAGENAME}}
+            .then(name => char.name = name),
         getLatestRevisionTime(pagename)
             .then(timestamp => char.updated = new Date(timestamp))
     ]).then(() => char);
@@ -301,12 +306,14 @@ function getCharacter(pagename) {
 
 function parseSummon(text, pagename, url) {
     const summon = {};
-    let matches;
 
     try {
         // Page title and url are returned from search
-        summon.name = pagename;
+        summon.pagename = pagename;
         summon.url = url;
+
+        // Name (separate from page name)
+        summon.name = safeMatch(text, /\|name *= *(.+)/);
 
         // GBF asset ID
         summon.id = safeMatch(text, /\|id *= *(\d+)/);
@@ -339,6 +346,36 @@ function parseSummon(text, pagename, url) {
         summon.hp =  safeMatch(text, /\|hp3 *= *(\d+)/) ||
                      safeMatch(text, /\|hp2 *= *(\d+)/) ||
                      safeMatch(text, /\|hp1 *= *(\d+)/);
+
+        // Auras
+        summon.auras = {
+            main: [],
+            sub: []
+        };
+        for (let i = 0; i < 4; i++) { // No count property, so just look for all auras (currently max 4)
+            let n = i + 1;
+            let aura = safeMatch(text, `\\|aura${n} *= *(.+)`);
+            let sub = safeMatch(text, `\\|subaura${n} *= *(.+)`);
+
+            // Let missing auras be undefined (eg SSR Arcarum summons)
+            if (aura) {
+                summon.auras.main[i] = aura;
+            }
+            
+            if (sub) {
+                summon.auras.sub[i] = sub;
+            }
+        }
+
+        // Call
+        summon.call = {
+            name: safeMatch(text, /\|call_name *= *(.+)/),
+            effects: []
+        }
+        summon.call.effects[0] = safeMatch(text, /\|call_base *= *(.+)/);
+        summon.call.effects[1] = safeMatch(text, /\|call_mlb *= *(.+)/);
+        summon.call.effects[2] = safeMatch(text, /\|call_flb *= *(.+)/);
+        summon.call.effects[3] = safeMatch(text, /\|call_5s *= *(.+)/);
     }
     catch (ex) {
         // Catch exceptions so we can handle them as part of the promise flow
@@ -346,6 +383,26 @@ function parseSummon(text, pagename, url) {
     }
 
     return Promise.all([
+        Promise.all(summon.auras.main.map(aura => aura ? expandTemplate(aura, pagename) : null))
+            .then(results => {
+                results.forEach((result, i) => {
+                    summon.auras.main[i] = result;
+                });
+            }),
+        Promise.all(summon.auras.sub.map(aura => aura ? expandTemplate(aura, pagename) : null))
+            .then(results => {
+                results.forEach((result, i) => {
+                    summon.auras.sub[i] = result;
+                });
+            }),
+        Promise.all(summon.call.effects.map(call => call ? expandTemplate(call, pagename) : null))
+            .then(results => {
+                results.forEach((result, i) => {
+                    summon.call.effects[i] = result;
+                });
+            }),
+        expandTemplate(summon.name, pagename) // Sometimes the name field uses {{PAGENAME}}
+            .then(name => summon.name = name),
         getLatestRevisionTime(pagename)
             .then(timestamp => summon.updated = new Date(timestamp))
     ]).then(() => summon);
