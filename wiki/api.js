@@ -278,8 +278,8 @@ function parseCharacter(text, pagename, url) {
                     char.supports[i].description = desc;
                 });
             }),
-        expandTemplate(char.name, pagename) // Sometimes the name field uses {{PAGENAME}}
-            .then(name => char.name = name),
+        char.name.startsWith("{{") ? expandTemplate(char.name, pagename) // Sometimes the name field uses {{PAGENAME}}
+            .then(name => char.name = name) : null,
         getLatestRevisionTime(pagename)
             .then(timestamp => char.updated = new Date(timestamp))
     ]).then(() => char);
@@ -401,8 +401,8 @@ function parseSummon(text, pagename, url) {
                     summon.call.effects[i] = result;
                 });
             }),
-        expandTemplate(summon.name, pagename) // Sometimes the name field uses {{PAGENAME}}
-            .then(name => summon.name = name),
+        summon.name.startsWith("{{") ? expandTemplate(summon.name, pagename) // Sometimes the name field uses {{PAGENAME}}
+            .then(name => summon.name = name) : Promise.resolve(),
         getLatestRevisionTime(pagename)
             .then(timestamp => summon.updated = new Date(timestamp))
     ]).then(() => summon);
