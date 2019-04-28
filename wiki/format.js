@@ -1,26 +1,10 @@
 const df = require("dateformat");
-const jst = require("./jst");
-const wiki = require("./wiki/api");
+const time = require("../time");
+const wiki = require("./api");
 
 const author = {
     name: "Granblue Fantasy Wiki",
     icon_url: `${wiki.host}/images/1/18/Vyrnball.png`
-}
-
-function duration(totalSeconds) {
-    let remaining = totalSeconds;
-    let units = [];
-    const days = Math.floor(remaining / 86400);
-    if (days > 0) units.push(`${days} days`);
-    remaining %= 86400;
-    const hours = Math.floor(remaining / 3600);
-    if (hours > 0) units.push(`${hours} hours`);
-    remaining %= 3600;
-    const minutes = Math.floor(remaining / 60);
-    if (minutes > 0) units.push(`${minutes} minutes`);
-    const seconds = remaining % 60;
-    if (seconds > 0) units.push(`${seconds} seconds`);
-    return units.slice(0, 3).join(", ");
 }
 
 function firstLetterUpper(str) {
@@ -65,7 +49,7 @@ function summonUncapFromIndex(index) {
 }
 
 function eventList(events) {
-    const now = jst.now();
+    const now = time.jst();
     const nows = Math.floor(now / 1000);
     const fields = events.map(event => {
         let name = event["name"];
@@ -82,11 +66,11 @@ function eventList(events) {
 
         // Current events
         if (nows > event["jst start"]) {
-            period += ` **(Ends in ${duration(event["jst end"] - nows)})**`;
+            period += ` **(Ends in ${time.duration(event["jst end"] - nows)})**`;
         }
         // Events starting within 3 days
         else if (event["jst start"] - nows < 259200) {
-            period += ` **(Starts in ${duration(event["jst start"] - nows)})**`;
+            period += ` **(Starts in ${time.duration(event["jst start"] - nows)})**`;
         }
 
         return {

@@ -1,10 +1,10 @@
 const request = require("request");
-const jst = require("../jst");
+const time = require("../time");
 
 const host = "https://gbf.wiki";
 
 function getCurrentEvents() {
-    const now = Math.floor(jst.now() / 1000);
+    const now = Math.floor(time.jst() / 1000);
     const qs = {
         title: "Special:CargoExport",
         tables: "event_history",

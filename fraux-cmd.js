@@ -1,5 +1,6 @@
 const wiki = require("./wiki/api");
-const format = require("./format");
+const format = require("./wiki/format");
+const resets = require("./resets");
 
 function setup(cmd) {
     cmd.add("wiki",
@@ -50,6 +51,39 @@ function setup(cmd) {
                 message: error
             }))
         );
+
+    cmd.add("whens",
+        "<option>",
+        "Check times",
+        "Time");
+
+    cmd.addsub("reset",
+        "",
+        "How long until daily reset",
+        "whens",
+        (context) => ({
+            to: context.sender.channelId,
+            message: resets.daily()
+        }));
+
+    cmd.addsub("weekly",
+        "",
+        "How long until weekly reset",
+        "whens",
+        (context) => ({
+            to: context.sender.channelId,
+            message: resets.weekly()
+        }));
+        
+
+    cmd.addsub("monthly",
+        "",
+        "How long until monthly reset",
+        "whens",
+        (context) => ({
+            to: context.sender.channelId,
+            message: resets.monthly()
+        }));
 
     cmd.help({
         title: `Fraux v${require("./package.json").version}`,
