@@ -58,7 +58,7 @@ function eventList(events) {
             name += ` (${firstLetterUpper(event["unf element"])})`;
         }
 
-        let period = `${df(new Date(event["jst start"] * 1000), "mmmm d")} – ${df(new Date(event["jst end"] * 1000), "mmmm d")}`;
+        let period = `${df(new Date(event["jst start"] * 1000), "UTC:mmmm d")} – ${event["utc end"] ? df(new Date(event["jst end"] * 1000), "UTC:mmmm d") : "?"}`;
 
         if (event["wiki page"]) {
             period = `[${period}](${wiki.host}/${encodeURIComponent(event["wiki page"])})`;

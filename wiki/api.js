@@ -8,7 +8,7 @@ function getCurrentEvents() {
     const qs = {
         title: "Special:CargoExport",
         tables: "event_history",
-        fields: "name,jst_start,jst_end,unf_element,wiki_page",
+        fields: "name,jst_start,jst_end,utc_start,utc_end,unf_element,wiki_page",
         where: `jst_start>${now} or jst_end>${now}`, // in case jst_end is undefined
         order_by: "jst_start",
         limit: 10,
