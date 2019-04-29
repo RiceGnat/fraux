@@ -85,6 +85,19 @@ function setup(cmd) {
             message: resets.monthly()
         }));
 
+    cmd.add("set",
+        "<option> <value>",
+        "Set options",
+        "Settings");
+
+    cmd.addsub("st",
+        "<hour> <hour>",
+        "Set strike time (24hr JST)",
+        "set",
+        (context, st1, st2) => {
+            // handler code
+        });
+    
     cmd.help({
         title: `Fraux v${require("./package.json").version}`,
         description: "Granblue Fantasy utility bot. For more information, see [GitHub](https://github.com/RiceGnat/fraux/).\nIcon by [@creepy_himecchi](https://twitter.com/creepy_himecchi/status/1105333289747771393).",
