@@ -111,7 +111,7 @@ function strikeTime(st) {
 
     msg += `Strike time is at ${df(stDate[0], "UTC:H:MM")} and ${df(stDate[1], "UTC:H:MM")} JST\n`;
     stDate.sort();
-    msg += `The next one is in ${time.duration((stDate[0].getTime() - now) / 1000)}`;
+    msg += `The next one is in **${time.duration((stDate[0].getTime() - now) / 1000)}**`;
 
     return msg;
 }

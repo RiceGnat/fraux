@@ -3,6 +3,10 @@ const format = require("./wiki/format");
 const time = require("./time");
 const resets = require("./resets");
 
+function senderHasHigherRole(userId, server) {
+    return !server.members.get(userId).manageable;
+}
+
 function setup(cmd) {
     cmd.add("wiki",
         "<action>",
@@ -99,13 +103,15 @@ function setup(cmd) {
         "Set strike time (24hr JST)",
         "set",
         (context, st1, st2) => {
-            if (context.sender.serverId)
+            if (context.sender.serverId &&
+                senderHasHigherRole(context.sender.userId, context.message.guild, context.bot)) {
                 return context.settings.setStrikeTime(context.sender.serverId, st1, st2)
                     .then(results => ({
                         message: "Strike time saved"
                     }), error => ({
                         message: error
                     }));
+            }
         });
     
     cmd.help({
