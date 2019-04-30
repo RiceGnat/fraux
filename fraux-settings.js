@@ -41,7 +41,11 @@ module.exports = {
         let h1 = parseInt(st1);
         let h2 = parseInt(st2);
         if (validate24Hr(h1) && validate24Hr(h2)) {
-            return setForServer(serverId, "striketime", [h1, h2]);
+            return setForServer(serverId, "striketime", [h1, h2])
+                .catch(error => {
+                    console.log(error);
+                    throw "Couldn't connect to the database";
+                });
         }
         else return Promise.reject("Time must be an hour using a 24-hour clock (0-23)");
     }
