@@ -72,8 +72,53 @@ function monthly() {
     return `Monthly reset is at 5:00 JST on ${df(reset, "UTC:dddd mmmm d, yyyy")} **(${time.duration((reset.getTime() - time.jst()) / 1000)})**`;
 }
 
+function strikeTime(st) {
+    let now = time.jst();
+    let remaining;
+
+    let stDate = st.map(h => {
+        let date = new Date(now);
+        
+        // If it's ST right now
+        if (h == date.getUTCHours()) {
+            let end = new Date(now);
+            end.setUTCHours(h + 1);
+            end.setUTCMinutes(0);
+            end.setUTCSeconds(0);
+            end.setUTCMilliseconds(0);
+
+            remaining = end.getTime() - now;
+        }
+
+        let begin = new Date(now);
+        // If this ST has already passed, set to tomorrow
+        if (date.getUTCHours() >= h) {
+            begin.setUTCDate(begin.getUTCDate() + 1);
+        }
+        begin.setUTCHours(h);
+        begin.setUTCMinutes(0);
+        begin.setUTCSeconds(0);
+        begin.setUTCMilliseconds(0);
+
+        return begin;
+    });
+
+    let msg = "";
+
+    if (remaining) {
+        msg += `Right now! There are **${time.duration(remaining / 1000)} remaining**\n`;
+    }
+
+    msg += `Strike time is at ${df(stDate[0], "UTC:H:MM")} and ${df(stDate[1], "UTC:H:MM")} JST\n`;
+    stDate.sort();
+    msg += `The next one is in ${time.duration((stDate[0].getTime() - now) / 1000)}`;
+
+    return msg;
+}
+
 module.exports = {
     daily: daily,
     weekly: weekly,
-    monthly: monthly
+    monthly: monthly,
+    strikeTime: strikeTime
 }

@@ -1,16 +1,15 @@
-let db;
-let settings;
+var db;
+var settings;
 
-function init(db) {
-    this.db = db;
-    this.settings = {};
+function init(frauxDb) {
+    db = frauxDb;
+    settings = {};
     return db.getAllServerSettings()
         .then(results => {
             results.forEach(row => {
-                settings[row.discord_server] = row.json;
+                settings[row.discord_server] = JSON.parse(row.json);
             });
         })
-    
 }
 
 function getForServer(id, key) {
@@ -19,15 +18,31 @@ function getForServer(id, key) {
 
 function setForServer(id, key, value) {
     let s = settings;
+
+    if (!s[id]) {
+        s[id] = {};
+    }
+
     s[id][key] = value;
-    db.writeServerSettings(id, s)
+    return db.writeServerSettings(id, s[id])
         .then(results => {
             settings = s;
         });
 }
 
+function validate24Hr(hour) {
+    return hour >= 0 && hour < 24;
+}
+
 module.exports = {
     init: init,
-    getForServer: getForServer,
-    setForServer: setForServer
+    getStrikeTime: (serverId) => getForServer(serverId, "striketime"),
+    setStrikeTime: (serverId, st1, st2) => {
+        let h1 = parseInt(st1);
+        let h2 = parseInt(st2);
+        if (validate24Hr(h1) && validate24Hr(h2)) {
+            return setForServer(serverId, "striketime", [h1, h2]);
+        }
+        else return Promise.reject("Time must be an hour using a 24-hour clock (0-23)");
+    }
 }

@@ -1,5 +1,6 @@
 const wiki = require("./wiki/api");
 const format = require("./wiki/format");
+const time = require("./time");
 const resets = require("./resets");
 
 function setup(cmd) {
@@ -15,7 +16,6 @@ function setup(cmd) {
         (context) => wiki.getCurrentEvents()
             .then(results => format.buildEventList(results))
             .then(embed => ({
-                to: context.sender.channelId,
                 embed: embed
             }))
         );
@@ -28,10 +28,8 @@ function setup(cmd) {
             wiki.getCharacter(args.join(" "))
             .then(results => format.characterEmbed(results))
             .then(embed => ({
-                to: context.sender.channelId,
                 embed: embed
             }), error => ({
-                to: context.sender.channelId,
                 message: error
             }))
         );
@@ -44,10 +42,8 @@ function setup(cmd) {
             wiki.getSummon(args.join(" "))
             .then(results => format.summonEmbed(results))
             .then(embed => ({
-                to: context.sender.channelId,
                 embed: embed
             }), error => ({
-                to: context.sender.channelId,
                 message: error
             }))
         );
@@ -62,7 +58,6 @@ function setup(cmd) {
         "How long until daily reset",
         "whens",
         (context) => ({
-            to: context.sender.channelId,
             message: resets.daily()
         }));
 
@@ -71,19 +66,28 @@ function setup(cmd) {
         "How long until weekly reset",
         "whens",
         (context) => ({
-            to: context.sender.channelId,
             message: resets.weekly()
         }));
         
-
     cmd.addsub("monthly",
         "",
         "How long until monthly reset",
         "whens",
         (context) => ({
-            to: context.sender.channelId,
             message: resets.monthly()
         }));
+        
+    cmd.addsub("st",
+        "",
+        "How long until strike time",
+        "whens",
+        (context) => {
+            if (context.sender.serverId) {
+                return {
+                    message: resets.strikeTime(context.settings.getStrikeTime(context.sender.serverId))
+                };
+            }
+        });
 
     cmd.add("set",
         "<option> <value>",
@@ -95,7 +99,13 @@ function setup(cmd) {
         "Set strike time (24hr JST)",
         "set",
         (context, st1, st2) => {
-            // handler code
+            if (context.sender.serverId)
+                return context.settings.setStrikeTime(context.sender.serverId, st1, st2)
+                    .then(results => ({
+                        message: "Strike time saved"
+                    }), error => ({
+                        message: error
+                    }));
         });
     
     cmd.help({

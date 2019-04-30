@@ -9,7 +9,7 @@
     "start": "node fraux.js"
   },
   "engines": {
-    "node": ">=7.0"
+    "node": ">=10.0"
   },
   "dependencies": {
     "dateformat": "^3.0.3",
@@ -18,8 +18,5 @@
     "node-schedule": "^1.3.2",
     "request": "^2.88.0",
     "wumpus": "github:RiceGnat/wumpus"
-  },
-  "config": {
-    "owner": "108470819088248832"
   }
 }
