@@ -6,7 +6,7 @@ function daily() {
     let reset = new Date();
 
     // Reset is at 5am JST (8pm UTC)
-    if (reset.getUTCHours() > 20) {
+    if (reset.getUTCHours() >= 20) {
         // Today's reset already happened
         reset.setUTCDate(reset.getUTCDate() + 1);
     }
