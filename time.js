@@ -1,7 +1,7 @@
 const offset = 9;
 
 function now() {
-    return Date.now() + (3600000 * offset);
+    return shiftHours(Date.now(), offset);
 }
 
 function duration(totalSeconds) {
@@ -20,7 +20,12 @@ function duration(totalSeconds) {
     return units.slice(0, 3).join(", ");
 }
 
+function shiftHours(time, hours) {
+    return time + (3600000 * hours);
+}
+
 module.exports = {
     jst: now,
-    duration: duration
+    duration: duration,
+    shift: shiftHours
 }

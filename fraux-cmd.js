@@ -1,7 +1,7 @@
 const wiki = require("./wiki/api");
 const format = require("./wiki/format");
 const time = require("./time");
-const resets = require("./resets");
+const whens = require("./fraux-whens");
 
 function senderHasHigherRole(userId, server) {
     return !server.members.get(userId).manageable;
@@ -62,7 +62,7 @@ function setup(cmd) {
         "How long until daily reset",
         "whens",
         (context) => ({
-            message: resets.daily()
+            message: whens.daily()
         }));
 
     cmd.addsub("weekly",
@@ -70,7 +70,7 @@ function setup(cmd) {
         "How long until weekly reset",
         "whens",
         (context) => ({
-            message: resets.weekly()
+            message: whens.weekly()
         }));
         
     cmd.addsub("monthly",
@@ -78,7 +78,7 @@ function setup(cmd) {
         "How long until monthly reset",
         "whens",
         (context) => ({
-            message: resets.monthly()
+            message: whens.monthly()
         }));
         
     cmd.addsub("st",
@@ -88,7 +88,7 @@ function setup(cmd) {
         (context) => {
             if (context.sender.serverId) {
                 return {
-                    message: resets.strikeTime(context.settings.getStrikeTime(context.sender.serverId))
+                    message: whens.strikeTime(context.settings.getStrikeTime(context.sender.serverId))
                 };
             }
         });
