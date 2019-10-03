@@ -1,13 +1,12 @@
 const wiki = require("./wiki/api");
 const format = require("./wiki/format");
-const time = require("./time");
 const whens = require("./fraux-whens");
 
 function senderHasHigherRole(userId, server) {
     return !server.members.get(userId).manageable;
 }
 
-function setup(cmd) {
+function handler(cmd) {
     cmd.add("wiki",
         "<action>",
         `Get info from [gbf.wiki](https://gbf.wiki/)`,
@@ -122,5 +121,5 @@ function setup(cmd) {
 }
 
 module.exports = {
-    setup: setup
+    handler: handler
 }

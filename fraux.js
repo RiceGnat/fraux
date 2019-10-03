@@ -10,7 +10,7 @@ const bot = require("wumpus").bot(
     {
         settings: settings
     },
-    cmd.setup
+    cmd.handler
 );
 
 settings.init(db)
