@@ -1,6 +1,6 @@
 
 const df = require("dateformat");
-const time = require("./time");
+const time = require("./util/time");
 
 function setHour(date, hour) {
     date.setUTCHours(hour);
