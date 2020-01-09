@@ -1,5 +1,5 @@
 const request = require("request");
-const time = require("../time");
+const time = require("../util/time");
 
 const host = "https://gbf.wiki";
 

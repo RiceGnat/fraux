@@ -1,5 +1,5 @@
 const df = require("dateformat");
-const time = require("../time");
+const time = require("../util/time");
 const wiki = require("./api");
 
 const author = {
@@ -74,7 +74,7 @@ function eventList(events) {
         }
 
         return {
-            name: name,
+            name: `__${name}__`,
             value: period
         };
     });
