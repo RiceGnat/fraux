@@ -53,7 +53,7 @@ function search(pagename) {
             // Return first result
             resolve({
                 title,
-                url: `${host}/${title}`
+                url: `${host}/${encodeURI(title)}`
             });
         })
     });
