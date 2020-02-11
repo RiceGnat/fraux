@@ -29,10 +29,13 @@ function getCurrentEvents() {
 
 function search(pagename) {
     const qs = {
-        action: "opensearch",
-        search: pagename,
-        redirects: "resolve",
-        format: "json"
+        action: "query",
+        list: "search",
+        srsearch: pagename,
+        srlimit: 1,
+        srprop: "size",
+        format: "json",
+        formatversion: 2
     }
 
     return new Promise((resolve, reject) => {
@@ -42,17 +45,15 @@ function search(pagename) {
             json: true
         }, (err, resp, body) => {
             if (err || resp.statusCode !== 200) return reject(err ? err : resp.statusCode);
-            
-            if (body[1].length == 0) reject();
 
-            // Sort results to get default page at the top
-            body[1].sort();
-            body[3].sort();
+            if (body.query.search.length === 0) reject();
+
+            const title = body.query.search[0].title;
 
             // Return first result
             resolve({
-                title: body[1][0],
-                url: body[3][0]
+                title,
+                url: `${host}/${title}`
             });
         })
     });
@@ -264,6 +265,13 @@ function parseCharacter(text, pagename, url) {
                 labels.forEach((label, i) => {
                     // Don't want newlines in ougi labels
                     if (label) char.ougis[i].label = label.replace("\n", " ");
+                });
+            }),
+        Promise.all(char.skills.map(skill => expandTemplate(skill.name, pagename)))
+            .then(names => {
+                names.forEach((name, i) => {
+                    // Don't want newlines in skill names
+                    char.skills[i].name = name.replace("\n", " ");
                 });
             }),
         Promise.all(char.skills.map(skill => expandTemplate(skill.description, pagename)))
